@@ -10,6 +10,10 @@ public class ResultItem {
 
     ResultItem(){}
 
+    ResultItem(String verseInfo){
+        this.verseInfo = verseInfo;
+    }
+
     ResultItem(String verseInfo, String verse){
         this.verseInfo = verseInfo;
         this.verse = verse;

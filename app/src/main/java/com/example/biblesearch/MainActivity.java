@@ -12,6 +12,7 @@ import android.os.AsyncTask;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.lang.Integer;
@@ -21,8 +22,7 @@ public class MainActivity extends Activity {
 	private RecyclerView sResultRecycler;
 	private RecyclerView.Adapter sAdapter;
 
-	private DBNkjv dbNkjv = null;
-	private DBWordVersesPair dbWordVerse = null;
+	private DBMan dbMan = null;
 	private String[] books = null;
 
 	public static final String TAG = "BIBLESEARCH";
@@ -35,11 +35,7 @@ public class MainActivity extends Activity {
         sResultRecycler.setHasFixedSize(true);
         sResultRecycler.setLayoutManager(new LinearLayoutManager(this));
         
-		dbNkjv=new DBNkjv(this);
-        dbNkjv.setJournalDir();
-
-		dbWordVerse=new DBWordVersesPair(this);
-		dbWordVerse.setJournalDir();
+		dbMan=new DBMan(this);
 		
 		books = createBooks();
 		
@@ -72,7 +68,7 @@ public class MainActivity extends Activity {
 			String[] phrase = sPhrase[0].trim().split("\\s+");
 
 			for(String phraseTerm : phrase){
-                tmpVList=dbWordVerse.getVerseList(phraseTerm);
+                tmpVList = dbMan.getVerseList(phraseTerm);
 
                 // If the word does'nt exist in DB (List is empty) stop
 				if(tmpVList == null)
@@ -101,32 +97,33 @@ public class MainActivity extends Activity {
               Parse verseId to get book number, chapter number, verse number and retrieve verse
               Create ResultItem array to pass to recycler view Adapor
             */
-            int i=0;
-            resList = new ResultItem[finalVerses.size()];
+            Integer[] vIdList = finalVerses.toArray(new Integer[]{});
+
+            resList = new ResultItem[vIdList.length];
             int bookNum, chapNum, verseNum, verseIdCp;
             String verseInfo, verse;
 
-            long totaltime=0;
+            for(int i=0; i<vIdList.length; i++){
 
-            for(Integer verseId: finalVerses){
-
-                verseIdCp = verseId;
+                verseIdCp = vIdList[i];
 
                 verseNum = verseIdCp % 1000; verseIdCp /= 1000;
                 chapNum = verseIdCp % 1000; verseIdCp /= 1000;
                 bookNum = verseIdCp;
 
-                long start = System.nanoTime();
+                verseInfo = books[bookNum-1] + " " + chapNum + " " + verseNum;
 
-                verseInfo = books[bookNum-1]+" "+chapNum+" "+verseNum;
-                verse = dbNkjv.getVerse(verseId);
-
-                totaltime += System.nanoTime() - start;
-
-                resList[i++] = new ResultItem(verseInfo, verse);
+                resList[i] = new ResultItem(verseInfo);
 
             }
-            Log.i(TAG, "total db access time: "+totaltime/1000000000+" sec");
+
+            String[] verseList = dbMan.getVerses(vIdList);
+
+            for(int i=0; i<verseList.length; i++)
+            {
+                resList[i].setVerse(verseList[i]);
+            }
+
             return "";
 		}
 
