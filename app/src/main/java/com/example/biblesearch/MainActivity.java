@@ -12,7 +12,6 @@ import android.os.AsyncTask;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.lang.Integer;
@@ -20,7 +19,8 @@ import java.lang.Integer;
 public class MainActivity extends Activity {
 
 	private RecyclerView sResultRecycler;
-	private RecyclerView.Adapter sAdapter;
+	private ResultAdapter sAdapter;
+    List<ResultItem> resList = new ArrayList<>();
 
 	private DBMan dbMan = null;
 	private String[] books = null;
@@ -31,11 +31,14 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
 		sResultRecycler = (RecyclerView) findViewById(R.id.search_result);
         sResultRecycler.setHasFixedSize(true);
         sResultRecycler.setLayoutManager(new LinearLayoutManager(this));
-        
-		dbMan=new DBMan(this);
+        sAdapter = new ResultAdapter(resList);
+        sResultRecycler.setAdapter(sAdapter);
+
+		dbMan = new DBMan(this);
 		
 		books = createBooks();
 		
@@ -57,7 +60,6 @@ public class MainActivity extends Activity {
 	private class BSearch extends AsyncTask<String, Void, String>{
 
         Set<Integer> finalVerses = null;
-        ResultItem[] resList = null;
 
 		protected String doInBackground(String... sPhrase){
 
@@ -99,7 +101,7 @@ public class MainActivity extends Activity {
             */
             Integer[] vIdList = finalVerses.toArray(new Integer[]{});
 
-            resList = new ResultItem[vIdList.length];
+            //resList = new ResultItem[vIdList.length];
             int bookNum, chapNum, verseNum, verseIdCp;
             String verseInfo, verse;
 
@@ -113,7 +115,7 @@ public class MainActivity extends Activity {
 
                 verseInfo = books[bookNum-1] + " " + chapNum + " " + verseNum;
 
-                resList[i] = new ResultItem(verseInfo);
+                resList.add(new ResultItem(verseInfo));
 
             }
 
@@ -121,7 +123,7 @@ public class MainActivity extends Activity {
 
             for(int i=0; i<verseList.length; i++)
             {
-                resList[i].setVerse(verseList[i]);
+                resList.get(i).setVerse(verseList[i]);
             }
 
             return "";
@@ -129,8 +131,7 @@ public class MainActivity extends Activity {
 
 		protected void onPostExecute(String res){
 			if(res == null) return;
-            sAdapter = new ResultAdapter(resList);
-            sResultRecycler.setAdapter(sAdapter);
+            sAdapter.update();
 		}
 	}
 
@@ -140,9 +141,9 @@ public class MainActivity extends Activity {
 	}
 
 	public void find(View view) throws IOException{
-        sResultRecycler.removeAllViewsInLayout();
-		String sPhrase=((EditText)findViewById(R.id.search_phrase)).getText().toString();
-		(new BSearch()).execute(sPhrase);
+        sAdapter.clear();
+        String sPhrase=((EditText)findViewById(R.id.search_phrase)).getText().toString();
+        (new BSearch()).execute(sPhrase);
 	}
 
 	// Return book list

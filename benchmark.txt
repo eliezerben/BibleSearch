@@ -1,0 +1,18 @@
+									heaven				the
+
+pragma on transaction off 	0.446328854 sec         	9.219288538 sec
+								0.264088333 sec		7.785621872 sec
+														7.686217497 sec
+									
+pragma on transaction on	almost same			7.215036091 sec
+														6.023390623 sec
+														6.089756873 sec
+
+
++compileStatement									1.176202812 sec
+
++using same adapter and
+instead of new adapter for 							1.11273177 sec
+each search.(Using notify
+methods of recyclerview
+adapter)

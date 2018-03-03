@@ -21,7 +21,6 @@ public class DBMan extends SQLiteAssetHelper{
 	}
 
 	public void setPragma(){
-	    //set JournalDir
         //db.rawQuery("PRAGMA temp_store_directory='"+context.getDatabasePath("db.db")+"'", null);
         db.rawQuery("PRAGMA journal_mode = OFF", null);
 	}
@@ -30,7 +29,7 @@ public class DBMan extends SQLiteAssetHelper{
 
 	    String[] result = new String[vIdList.length];
 
-        Cursor verse = null;
+        //Cursor verse = null;
 
         long start = System.nanoTime();
 
