@@ -56,7 +56,6 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.VerseViewH
         int currentCount = resList.size();
         resList.clear();
         curSize = 0;
-        Log.i(TAG, "resList cleared Size: "+resList.size());
         notifyItemRangeRemoved(0, currentCount);
     }
 
@@ -70,5 +69,17 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.VerseViewH
             Log.i(TAG, resList.get(i).getVerseInfo()+" : "+resList.get(i).getVerse());
         }*/
         notifyItemRangeInserted(0, resList.size());
+    }
+
+    public void updateInsert(){
+        curSize = resList.size();
+        //Log.i(TAG, "Total items in resList: "+resList.size());
+/*        for(int i=0; i<5; i++){
+            if(i>=resList.size()){
+                break;
+            }
+            Log.i(TAG, resList.get(i).getVerseInfo()+" : "+resList.get(i).getVerse());
+        }*/
+        notifyItemInserted(curSize-1);
     }
 }
