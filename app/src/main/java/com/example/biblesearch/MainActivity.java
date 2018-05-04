@@ -8,14 +8,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.os.AsyncTask;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.lang.Integer;
 
@@ -30,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private String[] books = null;
 
     AsyncSearch curAsync = null;
+    EditText editText = null;
 
     public static final String GLOBAL_TAG = "BIBLESEARCH";
 
@@ -49,6 +54,9 @@ public class MainActivity extends AppCompatActivity {
 
         books = createBooks();
 
+        editText = (EditText)findViewById(R.id.search_phrase);
+        addEvents();
+
     }
 
     private class AsyncSearch extends AsyncTask<String, ResultItem, String>{
@@ -57,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
         private Integer[] vIdList =null;
         private String TAG;
 
-        private boolean stopAffectingUIFlag=false;
-
         public AsyncSearch(String TAG){
             this.TAG = TAG;
         }
@@ -66,19 +72,17 @@ public class MainActivity extends AppCompatActivity {
         ResultItem[] test;
 
         protected String doInBackground(String... sPhrase){
-            Log.e(TAG, "asyncSearch started.");
+            Log.i(TAG, "asyncSearch started.");
             String tmpVList;
             String[] tmpVListSplit;
             List<Integer> tmpVListInts = new ArrayList<>();
 
-            String[] phrase = sPhrase[0].trim().split("\\s+");
-
-            for(String phraseTerm : phrase){
+            for(String phraseTerm : sPhrase){
                 tmpVListInts.clear();
                 tmpVList = dbMan.getVerseList(phraseTerm);
 
                 // If the word does'nt exist in DB (List is empty) stop
-                if(tmpVList == null)
+                if(tmpVList == null || isCancelled())
                     return null;
 
                 //Log.i(TAG, tmpVList);
@@ -102,25 +106,26 @@ public class MainActivity extends AppCompatActivity {
 
             /*
               Parse verseId to get book number, chapter number, verse number and retrieve verse
-              Create ResultItem array to pass to recycler view Adapor
+              Create ResultItem array to pass to recycler view Adaptor
             */
             vIdList = finalVerses.toArray(new Integer[]{});
+            Arrays.sort(vIdList);
 
             //--------------------------------------------------------
-
+            Log.i(TAG, "total db access time check start");
             //long diff = 0, diff_a;
             long start = System.nanoTime();
 
             try {
                 db.beginTransaction();
 
-                // Improve performance by compiling select statement
+                //Improve performance by compiling select statement
                 SQLiteStatement selStmt = db.compileStatement("SELECT verse FROM nkjv WHERE vnum=?");
 
                 int bookNum, chapNum, verseNum, verseIdCp;
                 String verseInfo, verse;
 
-                for (int i = 0; i < vIdList.length; i++) {
+                for (int i = 0; i < vIdList.length && !isCancelled(); i++) {
 
 
                     if(isCancelled()){
@@ -158,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onProgressUpdate(ResultItem... res){
-            if(stopAffectingUIFlag == false) {
+            if(!isCancelled()) {
                 resList.add(res[0]);
                 sAdapter.updateInsert();
             }
@@ -176,24 +181,14 @@ public class MainActivity extends AppCompatActivity {
             createAsyncTask();
         }
 
-        public void stopAffectingUI(){
-            stopAffectingUIFlag = true;
-        }
-
     }
-
-/*    public void onSaveInstanceState(Bundle outState){
-        *//*if(tv!=null)
-            outState.putStringArrayList("content", tv);*//*
-    }*/
 
     int async_id=0;
 
-    public void find(View view) throws IOException{
+    public void find(View view) /*throws IOException */{
         async_id++;
 
         if(curAsync!=null) {
-            curAsync.stopAffectingUI();
             curAsync.cancel(false);
         }
         else {
@@ -203,12 +198,27 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAsyncTask(){
         sAdapter.clear();
-        Log.i(GLOBAL_TAG + "_ " + async_id + " _", "resList cleared Size: " + resList.size());
+        Log.i(GLOBAL_TAG + "_ " + async_id + " _", "resList cleared Size: " + sAdapter.getItemCount());
 
-        String sPhrase=((EditText)findViewById(R.id.search_phrase)).getText().toString();
+        String sPhrase = editText.getText().toString();
+        String[] sPhraseList = sPhrase.toLowerCase().trim().split("\\s+");
+        // Setting so that ResultAdapter can highlight searched words
+        sAdapter.setSearchPhraseList(sPhraseList);
         curAsync = new AsyncSearch(GLOBAL_TAG+"_ "+async_id+" _");
 
-        curAsync.execute(sPhrase);
+        curAsync.execute(sPhraseList);
+    }
+
+    void addEvents(){
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener(){
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent e){
+                if(actionId == EditorInfo.IME_ACTION_SEARCH){
+                    find(editText);
+                }
+                return true;
+            }
+        });
     }
 
     // Return book list
