@@ -27,8 +27,6 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.VerseViewH
 
     Pattern[] phrasePaterns = null;
 
-    BackgroundColorSpan highlight = new BackgroundColorSpan(Color.YELLOW);
-
     List<ResultItem> resList;
 
     ResultAdapter(List<ResultItem> resList){
@@ -37,7 +35,6 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.VerseViewH
 
     @Override
     public ResultAdapter.VerseViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        //Log.i(TAG, "onCreate called");
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         View v = inflater.inflate(R.layout.textview_layout, parent, false);
         return new VerseViewHolder(v);
@@ -45,22 +42,28 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.VerseViewH
 
     @Override
     public void onBindViewHolder(VerseViewHolder viewHolder, int position){
-        //Log.i(TAG, "onBind called");
-        String text = resList.get(position).getVerseInfo()+" : "+resList.get(position).getVerse();
-        SpannableStringBuilder spannable = new SpannableStringBuilder(text);
+        ResultItem resultItem = resList.get(position);
+        String resultText =   resultItem.getBookText() + " " +
+                        resultItem.getChapterNum() + " " +
+                        resultItem.getVerseNum() + " : " +
+                        resultItem.getVerseText();
+        SpannableStringBuilder spannable = new SpannableStringBuilder(resultText);
 
         for(Pattern p: phrasePaterns){
-            Matcher m = p.matcher(text);
+            Matcher m = p.matcher(resultText);
             while(m.find()){
-                spannable.setSpan(new BackgroundColorSpan(Color.YELLOW), m.start()+1, m.end()-1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                spannable.setSpan(
+                        new BackgroundColorSpan(Color.YELLOW),
+                        m.start()+1,
+                        m.end()-1,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
             }
         }
         viewHolder.textView.setText(spannable);
-        //viewHolder.textView.setText(resList.get(position).getVerseInfo()+" : "+resList.get(position).getVerse());
     }
 
     public int getItemCount(){
-        //return resList.size();
         return curSize;
     }
 
@@ -83,13 +86,7 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.VerseViewH
 
     public void updateInsert(){
         curSize = resList.size();
-        //Log.i(TAG, "Total items in resList: "+resList.size());
-/*        for(int i=0; i<5; i++){
-            if(i>=resList.size()){
-                break;
-            }
-            Log.i(TAG, resList.get(i).getVerseInfo()+" : "+resList.get(i).getVerse());
-        }*/
+        Log.i(TAG, "Total items in resList: "+resList.size());
         notifyItemInserted(curSize-1);
     }
 

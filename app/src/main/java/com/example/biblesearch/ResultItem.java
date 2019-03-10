@@ -6,32 +6,41 @@ package com.example.biblesearch;
 
 public class ResultItem {
     private String verseInfo;
-    private String verse;
+
+    private String bookText;
+    private int bookNum;
+    private int chapterNum;
+    private int verseNum;
+    private String verseText;
 
     ResultItem(){}
 
-    ResultItem(String verseInfo){
-        this.verseInfo = verseInfo;
+    ResultItem(String bookText, int bookNum, int chapterNum, int verseNum, String verseText){
+        this.bookText = bookText;
+        this.bookNum = bookNum;
+        this.chapterNum = chapterNum;
+        this.verseNum = verseNum;
+        this.verseText = verseText;
     }
 
-    ResultItem(String verseInfo, String verse){
-        this.verseInfo = verseInfo;
-        this.verse = verse;
+    public String getBookText(){
+        return this.bookText;
     }
 
-    public String getVerseInfo(){
-        return verseInfo;
+    public int getBookNum(){
+        return this.bookNum;
     }
 
-    public String getVerse(){
-        return verse;
+    public int getChapterNum(){
+        return this.chapterNum;
     }
 
-    public void setVerseInfo(String verseInfo){
-        this.verseInfo = verseInfo;
+    public int getVerseNum(){
+        return this.verseNum;
     }
 
-    public void setVerse(String verse){
-        this.verse = verse;
+    public String getVerseText(){
+        return verseText;
     }
+
 }

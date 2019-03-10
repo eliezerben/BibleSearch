@@ -1,6 +1,7 @@
 package com.example.biblesearch;
 
 import android.app.Activity;
+import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.os.AsyncTask;
 import android.widget.TextView;
@@ -32,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private DBMan dbMan = null;
     private SQLiteDatabase db;
     private String[] books = null;
+    private String currentSearchPhrase = null;
 
     AsyncSearch curAsync = null;
     EditText editText = null;
@@ -57,6 +60,14 @@ public class MainActivity extends AppCompatActivity {
         editText = (EditText)findViewById(R.id.search_phrase);
         addEvents();
 
+        if(savedInstanceState != null){
+            String savedSearchPhrase = savedInstanceState.getString("searchPhrase");
+            if(savedSearchPhrase != null) {
+                editText.setText(savedSearchPhrase);
+                createAsyncSearch();
+            }
+        }
+
     }
 
     private class AsyncSearch extends AsyncTask<String, ResultItem, String>{
@@ -81,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 tmpVListInts.clear();
                 tmpVList = dbMan.getVerseList(phraseTerm);
 
-                // If the word does'nt exist in DB (List is empty) stop
+                // If the word doesn't exist in DB (List is empty) stop
                 if(tmpVList == null || isCancelled())
                     return null;
 
@@ -123,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 SQLiteStatement selStmt = db.compileStatement("SELECT verse FROM nkjv WHERE vnum=?");
 
                 int bookNum, chapNum, verseNum, verseIdCp;
-                String verseInfo, verse;
+                String verseInfo, verseText;
 
                 for (int i = 0; i < vIdList.length && !isCancelled(); i++) {
 
@@ -137,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
                     selStmt.clearBindings();
                     selStmt.bindLong(1, vIdList[i]);
-                    verse = selStmt.simpleQueryForString();
+                    verseText = selStmt.simpleQueryForString();
 
                     verseIdCp = vIdList[i];
 
@@ -145,9 +156,13 @@ public class MainActivity extends AppCompatActivity {
                     chapNum = verseIdCp % 1000; verseIdCp /= 1000;
                     bookNum = verseIdCp;
 
-                    verseInfo = books[bookNum-1] + " " + chapNum + " " + verseNum;
-
-                    publishProgress(new ResultItem(verseInfo, verse));
+                    publishProgress(new ResultItem(
+                            books[bookNum-1],
+                            bookNum,
+                            chapNum,
+                            verseNum,
+                            verseText
+                    ));
 
                 }
                 db.setTransactionSuccessful();
@@ -157,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             long totaltime = System.nanoTime() - start;
-            Log.i(TAG, "total db access time: "+totaltime/1000000000.0+" sec ");
+            Log.i(TAG, "Total db access time: "+totaltime/1000000000.0+" sec ");
 
             return "";
         }
@@ -178,33 +193,41 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG+": --test--", "onCancelled run");
             // When another search is made when the current search is still going on,
             // wait until the current search is cancelled and start the next search.
-            createAsyncTask();
+            createAsyncSearch();
         }
 
+    }
+
+    public void onSaveInstanceState(Bundle outState){
+        super.onSaveInstanceState(outState);
+        if(currentSearchPhrase!=null){
+            outState.putString("searchPhrase", currentSearchPhrase);
+        }
     }
 
     int async_id=0;
 
-    public void find(View view) /*throws IOException */{
+    public void find(View view) {
         async_id++;
-
+        //hideSoftKeyboard();
         if(curAsync!=null) {
             curAsync.cancel(false);
         }
         else {
-            createAsyncTask();
+            createAsyncSearch();
         }
     }
 
-    private void createAsyncTask(){
+    private void createAsyncSearch(){
         sAdapter.clear();
-        Log.i(GLOBAL_TAG + "_ " + async_id + " _", "resList cleared Size: " + sAdapter.getItemCount());
+        Log.i(GLOBAL_TAG + " " + async_id + " ", "resList cleared Size: " + sAdapter.getItemCount());
 
         String sPhrase = editText.getText().toString();
+        currentSearchPhrase = sPhrase;
         String[] sPhraseList = sPhrase.toLowerCase().trim().split("\\s+");
         // Setting so that ResultAdapter can highlight searched words
         sAdapter.setSearchPhraseList(sPhraseList);
-        curAsync = new AsyncSearch(GLOBAL_TAG+"_ "+async_id+" _");
+        curAsync = new AsyncSearch(GLOBAL_TAG+" "+async_id+" ");
 
         curAsync.execute(sPhraseList);
     }
@@ -219,6 +242,15 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    void hideSoftKeyboard(){
+        View v = this.getCurrentFocus();
+        if(v!=null){
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            v.clearFocus();
+        }
     }
 
     // Return book list
